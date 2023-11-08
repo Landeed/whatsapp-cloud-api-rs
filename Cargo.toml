@@ -1,11 +1,11 @@
 [package]
-name = "whatsapp-cloud-api"
+name = "landeed-whatsapp-cloud-api"
 version = "0.3.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "Whatsapp Cloud API Rust Client"
-homepage = "https://github.com/sajuthankappan/whatsapp-cloud-api-rs"
-repository = "https://github.com/sajuthankappan/whatsapp-cloud-api-rs"
+description = "Landeed Fork of Whatsapp Cloud API Rust Client"
+homepage = "https://github.com/Landeed/whatsapp-cloud-api-rs"
+repository = "https://github.com/Landeed/whatsapp-cloud-api-rs"
 readme = "README.md"
 keywords = ["whatsapp"]
 categories = ["api-bindings"]
