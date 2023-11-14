@@ -1,30 +1,26 @@
-use crate::{
-    models::{Message, MessageResponse},
-    WhatsappError,
-};
+use serde::{de::DeserializeOwned, Serialize};
+
+use crate::{models::Response, WhatsappError};
 
 pub struct WhatasppClient {
     access_token: String,
-    phone_number_id: String,
+    url: String,
 }
 
 impl WhatasppClient {
-    pub fn new(access_token: &str, phone_number_id: &str) -> Self {
+    pub fn new(access_token: &str, url: &str) -> Self {
         Self {
             access_token: access_token.into(),
-            phone_number_id: phone_number_id.into(),
+            url: url.into(),
         }
     }
 
-    pub async fn send_message(&self, message: &Message) -> Result<MessageResponse, WhatsappError> {
-        http_client::post(&self.whatsapp_api_url(), &self.access_token, message).await
-    }
-
-    fn whatsapp_api_url(&self) -> String {
-        format!(
-            "https://graph.facebook.com/v15.0/{}/messages",
-            self.phone_number_id
-        )
+    pub async fn send<T, U>(&self, message: T) -> Result<Response<U>, WhatsappError>
+    where
+        T: Serialize,
+        U: DeserializeOwned,
+    {
+        http_client::post(&self.url, &self.access_token, &message).await
     }
 }
 
@@ -32,9 +28,13 @@ mod http_client {
     use reqwest::StatusCode;
     use serde::{de::DeserializeOwned, Serialize};
 
-    use crate::WhatsappError;
+    use crate::{models::Response, WhatsappError};
 
-    pub async fn post<T, U>(url: &str, bearer_token: &str, data: &T) -> Result<U, WhatsappError>
+    pub async fn post<T, U>(
+        url: &str,
+        bearer_token: &str,
+        data: &T,
+    ) -> Result<Response<U>, WhatsappError>
     where
         T: Serialize + ?Sized,
         U: DeserializeOwned,
@@ -46,11 +46,15 @@ mod http_client {
             .json(&data)
             .send()
             .await?;
-
+        let status: u16 = resp.status().as_u16();
         match resp.status() {
-            StatusCode::OK | StatusCode::CREATED => {
+            StatusCode::OK | StatusCode::CREATED | StatusCode::ACCEPTED => {
                 let json = resp.json::<U>().await?;
-                Ok(json)
+                let wrapper = Response {
+                    status_code: status,
+                    data: json,
+                };
+                Ok(wrapper)
             }
             _ => {
                 log::warn!("{:?}", &resp);

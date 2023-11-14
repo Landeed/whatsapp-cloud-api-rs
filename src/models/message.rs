@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::Template;
+use super::template::Template;
 
 const WHATSAPP: &str = "whatsapp";
 const TEXT: &str = "text";
