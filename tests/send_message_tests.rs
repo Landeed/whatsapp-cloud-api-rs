@@ -1,5 +1,5 @@
-use whatsapp_cloud_api::{
-    models::{Component, Message, Parameter, Template, Text},
+use landeed_whatsapp_cloud_api::{
+    models::{Component, Message, MessageResponse, Parameter, Response, Template, Text},
     WhatasppClient, WhatsappError,
 };
 
@@ -15,8 +15,8 @@ async fn send_text_message_works() -> Result<(), WhatsappError> {
     let text = Text::new("test message");
     let message = Message::from_text(&to, text);
     let client = WhatasppClient::new(&access_token, &phone_number_id);
-    let response = client.send_message(&message).await?;
-    assert_eq!(response.messages.len(), 1);
+    let response: Response<MessageResponse> = client.send(&message).await?;
+    assert_eq!(response.data.messages.len(), 1);
     Ok(())
 }
 
@@ -34,8 +34,8 @@ async fn send_message_template_works() -> Result<(), WhatsappError> {
     let template = Template::new(template_name, language);
     let message = Message::from_template(&to, template);
     let client = WhatasppClient::new(&access_token, &phone_number_id);
-    let response = client.send_message(&message).await?;
-    assert_eq!(response.messages.len(), 1);
+    let response: Response<MessageResponse> = client.send(&message).await?;
+    assert_eq!(response.data.messages.len(), 1);
     Ok(())
 }
 
@@ -55,8 +55,8 @@ async fn send_message_template_with_components_works() -> Result<(), WhatsappErr
     let template = Template::with_components(template_name, language, components);
     let message = Message::from_template(&to, template);
     let client = WhatasppClient::new(&access_token, &phone_number_id);
-    let response = client.send_message(&message).await?;
-    assert_eq!(response.messages.len(), 1);
+    let response: Response<MessageResponse> = client.send(&message).await?;
+    assert_eq!(response.data.messages.len(), 1);
     Ok(())
 }
 
