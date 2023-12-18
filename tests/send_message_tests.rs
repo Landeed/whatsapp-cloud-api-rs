@@ -1,62 +1,67 @@
-use landeed_whatsapp_cloud_api::{
-    models::{Component, Message, MessageResponse, Parameter, Response, Template, Text},
-    WhatasppClient, WhatsappError,
+use landeed_whatsapp_cloud_api::models::{
+    Body, Data, FreshChatMessage, FreshChatMessageRequest, FreshChatMessageResponse, From,
+    MessageTemplate, Params, RetrievedFreshChatResponse, RichTemplateData, To,
 };
+use landeed_whatsapp_cloud_api::{models::Response, WhatsappClient, WhatsappError};
 
 #[tokio::test]
-async fn send_text_message_works() -> Result<(), WhatsappError> {
+async fn send_retrieve_freshchat_message_works() -> Result<(), WhatsappError> {
     setup();
     let access_token = std::env::var("WHATSAPP_ACCESS_TOKEN")
         .expect("Missing environment variable WHATSAPP_ACCESS_TOKEN");
-    let phone_number_id = std::env::var("WHATSAPP_PHONE_NUMBER_ID")
-        .expect("Missing environment variable WHATSAPP_PHONE_NUMBER_ID");
-    let to =
-        std::env::var("WHATSAPP_SEND_TO").expect("Missing environment variable WHATSAPP_SEND_TO");
-    let text = Text::new("test message");
-    let message = Message::from_text(&to, text);
-    let client = WhatasppClient::new(&access_token, &phone_number_id);
-    let response: Response<MessageResponse> = client.send(&message).await?;
-    assert_eq!(response.data.messages.len(), 1);
-    Ok(())
-}
+    let namespace = std::env::var("WHATSAPP_NAMESPACE_ID")
+        .expect("Missing environment variable WHATSAPP_NAMESPACE_ID");
+    let url =
+        std::env::var("WHATSAPP_BASE_URL").expect("Missing environment variable WHATSAPP_BASE_URL");
+    let template =
+        std::env::var("WHATSAPP_TEMPLATE").expect("Missing environment variable WHATSAPP_TEMPLATE");
+    let params: Vec<String> = std::env::var("WHATSAPP_PARAMS")
+        .expect("Missing environment variable WHATSAPP_PARAMS")
+        .split(',')
+        .map(|s| s.to_string())
+        .collect();
 
-#[tokio::test]
-async fn send_message_template_works() -> Result<(), WhatsappError> {
-    setup();
-    let access_token = std::env::var("WHATSAPP_ACCESS_TOKEN")
-        .expect("Missing environment variable WHATSAPP_ACCESS_TOKEN");
-    let phone_number_id = std::env::var("WHATSAPP_PHONE_NUMBER_ID")
-        .expect("Missing environment variable WHATSAPP_ACCESS_TOKEN");
+    let from = std::env::var("WHATSAPP_SEND_FROM")
+        .expect("Missing environment variable WHATSAPP_SEND_FROM");
     let to =
         std::env::var("WHATSAPP_SEND_TO").expect("Missing environment variable WHATSAPP_SEND_TO");
-    let template_name = "hello_world";
-    let language = "en_US";
-    let template = Template::new(template_name, language);
-    let message = Message::from_template(&to, template);
-    let client = WhatasppClient::new(&access_token, &phone_number_id);
-    let response: Response<MessageResponse> = client.send(&message).await?;
-    assert_eq!(response.data.messages.len(), 1);
-    Ok(())
-}
 
-#[tokio::test]
-async fn send_message_template_with_components_works() -> Result<(), WhatsappError> {
-    setup();
-    let access_token = std::env::var("WHATSAPP_ACCESS_TOKEN")
-        .expect("Missing environment variable WHATSAPP_ACCESS_TOKEN");
-    let phone_number_id = std::env::var("WHATSAPP_PHONE_NUMBER_ID")
-        .expect("Missing environment variable WHATSAPP_ACCESS_TOKEN");
-    let to =
-        std::env::var("WHATSAPP_SEND_TO").expect("Missing environment variable WHATSAPP_SEND_TO");
-    let template_name = "sample_shipping_confirmation";
-    let language = "en_US";
-    let parameters = Vec::from([Parameter::from_text("3")]);
-    let components = Vec::from([Component::with_parameters("body", parameters)]);
-    let template = Template::with_components(template_name, language, components);
-    let message = Message::from_template(&to, template);
-    let client = WhatasppClient::new(&access_token, &phone_number_id);
-    let response: Response<MessageResponse> = client.send(&message).await?;
-    assert_eq!(response.data.messages.len(), 1);
+    let rich_template_data = RichTemplateData {
+        body: Body {
+            params: params.into_iter().map(|data| Params { data }).collect(),
+        },
+    };
+    let data = Data {
+        message_template: MessageTemplate::new(
+            &template,
+            &namespace,
+            "en",
+            "conversation",
+            rich_template_data,
+        ),
+    };
+    let from = From {
+        phone_number: from.to_string(),
+    };
+    let to = vec![to.to_string()]
+        .into_iter()
+        .map(|phone_number| To { phone_number })
+        .collect();
+
+    let client = WhatsappClient::new(access_token, url);
+    let message = FreshChatMessage::from_text(from, to, data);
+    let response: Response<FreshChatMessageResponse> = client
+        .send("/v2/outbound-messages/whatsapp", message)
+        .await?;
+    //println!("{:?}", response);
+
+    let message = FreshChatMessageRequest {
+        request_id: response.data.request_id,
+    };
+    let response: Response<RetrievedFreshChatResponse> =
+        client.retrieve("v2/outbound-messages", message).await?;
+    println!("{:?}", response);
+
     Ok(())
 }
 

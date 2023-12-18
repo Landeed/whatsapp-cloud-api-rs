@@ -14,7 +14,6 @@ pub struct To {
     pub phone_number: String,
 }
 
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Params {
     pub data: String,
@@ -60,11 +59,10 @@ impl MessageTemplate {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Data {
-   pub message_template: MessageTemplate,
+    pub message_template: MessageTemplate,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct FreshChatMessage {
     pub from: From,
     pub provider: String,
@@ -81,4 +79,33 @@ impl FreshChatMessage {
             data: data,
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum FreshChatMessageStatus {
+    Accepted,
+    InProgress,
+    Sent,
+    Delivered,
+    Failed,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RetrievedFreshChatMessage {
+    pub message_id: String,
+    pub from: From,
+    pub provider: String,
+    pub to: To,
+    pub data: Data,
+    pub request_id: String,
+    pub status: FreshChatMessageStatus,
+    pub created_on: u64,
+    pub failure_code: Option<String>,
+    pub failure_reason: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RetrievedFreshChatResponse {
+    pub outbound_messages: Vec<RetrievedFreshChatMessage>,
 }
